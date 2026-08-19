@@ -87,7 +87,7 @@ SERVER LAN
 
 ## Topology Screenshot
 
-![Network Topology](lab3Img/01-topology\(1\).png)
+https://github.com/gurveer6123-coder/lab3Img/blob/main/01-topology.png?raw=true
 
 ---
 
@@ -187,7 +187,7 @@ GigabitEthernet0/1   192.168.50.1   up   up
 
 `up/up` confirms that both the physical interface and line protocol are operational.
 
-![Router Interface Verification](lab3Img/02-router-interfaces.png)
+![Router Interface Verification](gurveer6123-coder/lab3Img/02-router-interfaces.png)
 
 ---
 
