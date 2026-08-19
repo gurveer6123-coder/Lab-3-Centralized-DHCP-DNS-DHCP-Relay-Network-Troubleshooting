@@ -2,61 +2,70 @@
 
 ## Project Overview
 
-This lab demonstrates the configuration and troubleshooting of common network services in a small enterprise-style network using Cisco Packet Tracer.
+This project demonstrates the design, configuration, verification, and troubleshooting of a small enterprise-style network using **Cisco Packet Tracer**.
 
-The network contains two separate IPv4 networks connected through a Cisco router. User computers are located on one subnet while a centralized server providing DHCP and DNS services is located on another subnet.
+The network contains two separate IPv4 subnets connected through a Cisco router:
 
-Because DHCP broadcasts do not normally pass through routers, DHCP Relay was configured using the Cisco `ip helper-address` command.
+* A **User LAN** containing three client PCs
+* A **Server LAN** containing a centralized server
 
-The lab also included several intentionally created network failures to practice a structured troubleshooting process.
+The centralized server provides:
 
-### Technologies and Concepts Practiced
+* DHCP services
+* DNS services
 
+Because the DHCP server is located on a different subnet from the client computers, **DHCP Relay** was configured on the router using the Cisco IOS `ip helper-address` command.
+
+The lab also includes multiple intentionally created network failures to practice systematic troubleshooting.
+
+---
+
+# Skills Demonstrated
+
+This lab demonstrates practical experience with:
+
+* Cisco Packet Tracer
+* Cisco IOS CLI
 * IPv4 addressing
 * Subnetting
-* Default gateways
-* Static IP addressing
-* Dynamic Host Configuration Protocol (DHCP)
-* Centralized DHCP server
+* Static IP configuration
+* Dynamic IP addressing
+* DHCP
+* Centralized DHCP services
 * DHCP Relay
 * `ip helper-address`
-* Domain Name System (DNS)
+* DNS
 * DNS A records
+* Default gateways
 * Inter-subnet routing
-* Cisco router CLI
-* Cisco switch CLI
-* Interface troubleshooting
+* Router interface configuration
 * Switch port troubleshooting
-* DHCP failure diagnosis
+* DHCP troubleshooting
 * DNS troubleshooting
-* Connectivity testing
-* `ping`
-* `ipconfig`
-* `show ip interface brief`
-* `show interfaces status`
-* `show running-config`
+* Client connectivity troubleshooting
+* Network verification
+* Structured troubleshooting methodology
 
 ---
 
 # Network Topology
 
-The topology consists of:
+The network contains:
 
 * 1 Cisco 2911 Router
 * 2 Cisco 2960 Switches
 * 3 Client PCs
 * 1 Server
-* 2 separate IPv4 networks
 
-The PCs are located on the user LAN while the DHCP/DNS server is located on a separate server LAN.
+The topology is:
 
 ```text
- PC0 -----\
- PC1 ------ SW1 -------- R1 -------- SW2 -------- Server0
- PC2 -----/
+PC0 -----\
+PC1 ------ SW1 -------- Router0 -------- SW2 -------- Server0
+PC2 -----/
 ```
 
-### Logical Network
+The user devices and server are intentionally placed on different networks.
 
 ```text
 USER LAN
@@ -65,19 +74,19 @@ USER LAN
 PC0
 PC1
 PC2
-  |
- SW1
-  |
-R1 G0/0
+ |
+SW1
+ |
+Router0 G0/0
 192.168.10.1
-  |
-  | Routing
-  |
-R1 G0/1
+ |
+ | Routing
+ |
+Router0 G0/1
 192.168.50.1
-  |
- SW2
-  |
+ |
+SW2
+ |
 Server0
 192.168.50.10
 
@@ -87,58 +96,77 @@ SERVER LAN
 
 ## Topology Screenshot
 
-https://github.com/gurveer6123-coder/lab3Img/blob/main/01-topology.png?raw=true
+![Network Topology](https://raw.githubusercontent.com/gurveer6123-coder/lab3Img/main/01-topology.png)
 
 ---
 
 # IP Addressing Plan
 
-Two different `/24` networks were used.
+Two separate `/24` networks were created.
 
 | Device  | Interface     | IP Address    | Subnet Mask   | Purpose            |
 | ------- | ------------- | ------------- | ------------- | ------------------ |
 | Router0 | G0/0          | 192.168.10.1  | 255.255.255.0 | User LAN Gateway   |
 | Router0 | G0/1          | 192.168.50.1  | 255.255.255.0 | Server LAN Gateway |
 | Server0 | FastEthernet0 | 192.168.50.10 | 255.255.255.0 | DHCP/DNS Server    |
-| PC0     | FastEthernet0 | DHCP          | 255.255.255.0 | User Client        |
-| PC1     | FastEthernet0 | DHCP          | 255.255.255.0 | User Client        |
-| PC2     | FastEthernet0 | DHCP          | 255.255.255.0 | User Client        |
+| PC0     | FastEthernet0 | DHCP          | 255.255.255.0 | Client             |
+| PC1     | FastEthernet0 | DHCP          | 255.255.255.0 | Client             |
+| PC2     | FastEthernet0 | DHCP          | 255.255.255.0 | Client             |
 
-### Network 1 — User LAN
+---
+
+# User Network
+
+The user LAN uses:
 
 ```text
-Network Address:  192.168.10.0/24
-Default Gateway:  192.168.10.1
-DHCP Start:       192.168.10.20
-Broadcast:        192.168.10.255
+Network Address:   192.168.10.0
+Subnet Mask:       255.255.255.0
+CIDR:              /24
+Default Gateway:   192.168.10.1
+Broadcast Address: 192.168.10.255
 ```
 
-Addresses below `.20` were kept outside of the DHCP client range so they could be used for infrastructure devices if needed.
-
-Example:
+The DHCP range begins at:
 
 ```text
-192.168.10.1     Router
-192.168.10.2-.19 Reserved/Static Devices
-192.168.10.20+   DHCP Clients
+192.168.10.20
 ```
 
-### Network 2 — Server LAN
+This leaves lower addresses available for infrastructure devices.
+
+Example addressing structure:
 
 ```text
-Network Address:  192.168.50.0/24
-Default Gateway:  192.168.50.1
-Server Address:   192.168.50.10
-Broadcast:        192.168.50.255
+192.168.10.0      Network Address
+192.168.10.1      Router / Default Gateway
+192.168.10.2-.19  Reserved for Static Devices
+192.168.10.20+    DHCP Client Addresses
+192.168.10.255    Broadcast Address
+```
+
+---
+
+# Server Network
+
+The server network uses:
+
+```text
+Network Address:   192.168.50.0
+Subnet Mask:       255.255.255.0
+CIDR:              /24
+Default Gateway:   192.168.50.1
+Server Address:    192.168.50.10
+Broadcast Address: 192.168.50.255
 ```
 
 ---
 
 # Router Configuration
 
-The Cisco router connects the user network and server network.
+Router0 connects both networks.
 
-## Configure User LAN Interface
+## Configure G0/0 — User LAN
 
 ```text
 enable
@@ -150,7 +178,16 @@ no shutdown
 exit
 ```
 
-## Configure Server LAN Interface
+This interface becomes the default gateway for the client computers.
+
+```text
+Router0 G0/0
+192.168.10.1/24
+```
+
+---
+
+# Configure G0/1 — Server LAN
 
 ```text
 interface GigabitEthernet0/1
@@ -161,41 +198,46 @@ exit
 end
 ```
 
-The router therefore has one interface in each network:
+This interface becomes the default gateway for Server0.
 
 ```text
-G0/0 = 192.168.10.1/24
-G0/1 = 192.168.50.1/24
+Router0 G0/1
+192.168.50.1/24
 ```
 
 ---
 
 # Router Interface Verification
 
-The following command was used to verify interface addressing and operational status:
+The router interfaces were verified using:
 
 ```text
 show ip interface brief
 ```
 
-Both configured interfaces showed:
+Expected operational interfaces:
 
 ```text
 GigabitEthernet0/0   192.168.10.1   up   up
 GigabitEthernet0/1   192.168.50.1   up   up
 ```
 
-`up/up` confirms that both the physical interface and line protocol are operational.
+The `up/up` state confirms that:
 
-![Router Interface Verification](gurveer6123-coder/lab3Img/02-router-interfaces.png)
+* The physical interface is operational
+* The Layer 2 protocol is operational
+
+![Router Interface Verification](https://raw.githubusercontent.com/gurveer6123-coder/lab3Img/main/02-router-interfaces.png)
 
 ---
 
 # Server Static IP Configuration
 
-Server0 was configured with a static IPv4 address because infrastructure servers should normally have predictable addresses.
+Server0 was assigned a static address.
 
-The following configuration was used:
+Infrastructure devices such as servers normally use static addresses because clients and other network devices need to know where to find them consistently.
+
+Server0 was configured with:
 
 ```text
 IP Address:       192.168.50.10
@@ -204,42 +246,64 @@ Default Gateway:  192.168.50.1
 DNS Server:       192.168.50.10
 ```
 
-The default gateway is `192.168.50.1` because Router0 G0/1 is the router interface on the server's local subnet.
+The server uses:
 
-![Server Static IP](images/04-server-static-ip.png)
+```text
+192.168.50.1
+```
 
-Connectivity between the server and its gateway was verified using:
+as its default gateway because Router0 G0/1 belongs to the same subnet.
+
+![Server Static IP](https://raw.githubusercontent.com/gurveer6123-coder/lab3Img/main/04-server-static-ip.png)
+
+---
+
+# Server-to-Router Connectivity Test
+
+Connectivity between Server0 and Router0 was verified with:
 
 ```text
 ping 192.168.50.1
 ```
 
----
-
-# Centralized DHCP Server Configuration
-
-Instead of configuring DHCP directly on the router, Server0 was configured as the DHCP server.
-
-This represents a more centralized enterprise-style design.
-
-The DHCP pool was configured with:
+Successful replies confirmed that the following path was operational:
 
 ```text
-Pool Name:         Users
-Default Gateway:   192.168.10.1
-DNS Server:        192.168.50.10
-Start IP Address:  192.168.10.20
-Subnet Mask:       255.255.255.0
-Maximum Users:     100
+Server0
+   |
+  SW2
+   |
+Router0 G0/1
 ```
 
-The DHCP server can therefore provide clients with addresses beginning from:
+---
+
+# Centralized DHCP Server
+
+Instead of configuring DHCP directly on Router0, Server0 was configured as a centralized DHCP server.
+
+This demonstrates a common enterprise-style network design.
+
+The DHCP pool was configured as follows:
+
+```text
+Pool Name:          Users
+Default Gateway:    192.168.10.1
+DNS Server:         192.168.50.10
+Start IP Address:   192.168.10.20
+Subnet Mask:        255.255.255.0
+Maximum Users:      100
+```
+
+![DHCP Server Pool](https://raw.githubusercontent.com/gurveer6123-coder/lab3Img/main/05-dhcp-pool.png)
+
+The first available DHCP address begins at:
 
 ```text
 192.168.10.20
 ```
 
-For example:
+Possible assignments include:
 
 ```text
 PC0 → 192.168.10.20
@@ -247,49 +311,67 @@ PC1 → 192.168.10.21
 PC2 → 192.168.10.22
 ```
 
-The exact assigned address depends on the order in which clients request DHCP leases.
-
-![DHCP Server Pool](images/05-dhcp-pool.png)
+The exact addresses depend on the order in which clients request leases.
 
 ---
 
-# DHCP Relay Configuration
+# Why DHCP Relay Was Required
 
-A major challenge in this topology is that the DHCP clients and DHCP server are located on different networks.
-
-The clients are located on:
-
-```text
-192.168.10.0/24
-```
-
-while the DHCP server is located on:
+The DHCP server is located on:
 
 ```text
 192.168.50.0/24
 ```
 
-DHCP discovery initially uses broadcast traffic.
-
-Routers do not normally forward Layer 3 broadcasts between subnets.
-
-Therefore, without additional configuration:
+while the client computers are located on:
 
 ```text
-PC DHCPDISCOVER
-       |
-      SW1
-       |
-      R1
-       X
-DHCP broadcast does not reach Server0
+192.168.10.0/24
 ```
 
-To solve this problem, DHCP Relay was configured on Router0.
+A DHCP client initially sends a broadcast request.
 
-The following command was applied to the interface receiving DHCP broadcasts from the clients:
+Example:
 
 ```text
+DHCPDISCOVER
+```
+
+Routers do not normally forward broadcast packets between different IP networks.
+
+Without DHCP Relay:
+
+```text
+PC
+ |
+SW1
+ |
+Router0
+ X
+ |
+SW2
+ |
+Server0
+```
+
+The DHCP broadcast would stop at Router0.
+
+---
+
+# DHCP Relay Configuration
+
+DHCP Relay was configured using:
+
+```text
+ip helper-address
+```
+
+The command was placed on Router0 G0/0 because this is the interface where DHCP requests from the client LAN arrive.
+
+Configuration:
+
+```text
+enable
 configure terminal
 
 interface GigabitEthernet0/0
@@ -298,7 +380,7 @@ ip helper-address 192.168.50.10
 end
 ```
 
-The important configuration is:
+The resulting interface configuration is:
 
 ```text
 interface GigabitEthernet0/0
@@ -306,9 +388,9 @@ interface GigabitEthernet0/0
  ip helper-address 192.168.50.10
 ```
 
-`ip helper-address` tells the router to relay supported UDP broadcast traffic received on G0/0 to Server0 at `192.168.50.10`.
+![DHCP Relay Configuration](https://raw.githubusercontent.com/gurveer6123-coder/lab3Img/main/03-dhcp-relay.png)
 
-The flow becomes:
+The DHCP process becomes:
 
 ```text
 PC
@@ -318,23 +400,23 @@ PC
 SW1
  |
  v
-Router G0/0
+Router0 G0/0
  |
  | ip helper-address
  v
+Server0
 192.168.50.10
-DHCP Server
 ```
 
-![DHCP Relay Configuration](images/03-dhcp-relay.png)
+Router0 relays the DHCP request to the centralized server.
 
 ---
 
-# DNS Server Configuration
+# DNS Configuration
 
 Server0 was also configured as the DNS server.
 
-A DNS A record was created:
+The DNS service was enabled and an IPv4 A record was created.
 
 ```text
 Name:     server.company.local
@@ -342,7 +424,9 @@ Type:     A Record
 Address:  192.168.50.10
 ```
 
-This allows clients to communicate with the server using:
+![DNS A Record](https://raw.githubusercontent.com/gurveer6123-coder/lab3Img/main/06-dns-record.png)
+
+DNS allows clients to use:
 
 ```text
 server.company.local
@@ -354,7 +438,7 @@ instead of remembering:
 192.168.50.10
 ```
 
-DNS resolution works as follows:
+The resolution process is:
 
 ```text
 server.company.local
@@ -366,25 +450,13 @@ DNS Server
 192.168.50.10
 ```
 
-![DNS A Record](images/06-dns-record.png)
-
 ---
 
 # DHCP Client Verification
 
-The PCs were configured to obtain their network settings automatically using DHCP.
+The PCs were configured to receive their IPv4 configuration automatically through DHCP.
 
-A client received:
-
-```text
-IPv4 Address:     192.168.10.21
-Subnet Mask:      255.255.255.0
-Default Gateway:  192.168.10.1
-```
-
-Other DHCP clients may receive `.20`, `.22`, or other available addresses from the pool.
-
-The following command was used to inspect the client configuration:
+Client configuration was checked using:
 
 ```text
 ipconfig
@@ -396,69 +468,92 @@ or:
 ipconfig /all
 ```
 
-![PC DHCP Address](images/07-pc-dhcp-address.png)
+A client successfully received:
 
-This confirmed that DHCP communication successfully crossed the router using DHCP Relay.
+```text
+IPv4 Address:     192.168.10.21
+Subnet Mask:      255.255.255.0
+Default Gateway:  192.168.10.1
+```
+
+![PC DHCP Address](https://raw.githubusercontent.com/gurveer6123-coder/lab3Img/main/07-pc-dhcp-address.png)
+
+This confirms that:
+
+* Server0 DHCP is operational
+* DHCP Relay is operational
+* Router connectivity is operational
+* The client received valid network configuration
 
 ---
 
-# DNS and End-to-End Connectivity Test
+# End-to-End Connectivity Test
 
-DNS resolution was tested from a client with:
+The server was tested by hostname using:
 
 ```text
 ping server.company.local
 ```
 
-The hostname successfully resolved to:
+DNS successfully resolved:
+
+```text
+server.company.local
+```
+
+to:
 
 ```text
 192.168.50.10
 ```
 
-and the server returned ICMP replies.
+The server responded successfully.
 
-![DNS Connectivity Test](images/08-connectivity-dns-test.png)
+![DNS Connectivity Test](https://raw.githubusercontent.com/gurveer6123-coder/lab3Img/main/08-connectivity-dns-test.png)
 
-This test confirms several things simultaneously:
+This single test helps verify:
 
 ```text
-PC IP Configuration     ✓
-Switch Connectivity     ✓
-Default Gateway         ✓
-Router Connectivity     ✓
-Inter-Subnet Routing    ✓
-DNS Resolution          ✓
-Server Connectivity     ✓
+Client IP Address        ✓
+Subnet Mask              ✓
+Default Gateway          ✓
+Switch Connectivity      ✓
+Router Connectivity      ✓
+Inter-Subnet Routing     ✓
+DNS Resolution           ✓
+Server Connectivity      ✓
 ```
 
 ---
 
-# Troubleshooting Scenarios
+# Network Troubleshooting
 
-An important part of this lab was intentionally creating failures and using troubleshooting commands to identify the cause.
+After confirming that the network worked correctly, several faults were intentionally introduced.
+
+The purpose was to practice identifying problems using symptoms and troubleshooting commands rather than randomly changing configurations.
 
 ---
 
-# Troubleshooting Scenario 1 — Wrong Default Gateway
+# Troubleshooting Scenario 1 — Incorrect Default Gateway
 
-A client was intentionally configured with an incorrect default gateway.
+PC0 was intentionally configured with an incorrect default gateway.
 
-Example incorrect configuration:
+Incorrect example:
 
 ```text
 IP Address:       192.168.10.50
 Subnet Mask:      255.255.255.0
 Default Gateway:  192.168.10.100
+DNS Server:       192.168.50.10
 ```
 
-The correct gateway should have been:
+The correct gateway was:
 
 ```text
 192.168.10.1
 ```
 
-A client may still communicate with devices on its own subnet while being unable to reach remote networks.
+A host may still communicate with devices on its own subnet while being unable to communicate with remote networks.
 
 Troubleshooting command:
 
@@ -477,23 +572,24 @@ Remote communication fails
 Check Default Gateway
 ```
 
-The problem was corrected by restoring:
+The issue was resolved by restoring:
 
 ```text
 Default Gateway: 192.168.10.1
 ```
 
-The client was later returned to DHCP configuration.
+The client was later returned to DHCP.
 
 ---
 
 # Troubleshooting Scenario 2 — DHCP Relay Failure
 
-The DHCP relay configuration was intentionally removed from Router0.
+The DHCP Relay configuration was intentionally removed from Router0.
 
 Command:
 
 ```text
+enable
 configure terminal
 
 interface GigabitEthernet0/0
@@ -502,44 +598,67 @@ no ip helper-address 192.168.50.10
 end
 ```
 
-Without the helper address, the router stopped forwarding DHCP requests to the remote DHCP server.
+The client was then forced to request a new DHCP lease.
 
-After forcing the client to request another DHCP lease, the client failed to receive an IPv4 address.
+Because the DHCP server was on another subnet and the relay configuration was missing, the client failed to receive a valid IPv4 address.
 
-In Packet Tracer this resulted in:
+The result was:
 
 ```text
-IPv4 Address:    0.0.0.0
-Subnet Mask:     0.0.0.0
-Default Gateway: 0.0.0.0
+IPv4 Address:     0.0.0.0
+Subnet Mask:      0.0.0.0
+Default Gateway:  0.0.0.0
 ```
 
-![DHCP Failure](images/09-dhcp-failure.png)
+![DHCP Failure](https://raw.githubusercontent.com/gurveer6123-coder/lab3Img/main/09-dhcp-failure.png)
 
-This indicated that the client had failed to obtain valid network configuration from DHCP.
-
-In real Windows environments, DHCP failure can also result in an APIPA address from:
+In real Windows environments, a DHCP failure may also cause a client to assign itself an APIPA address from:
 
 ```text
 169.254.0.0/16
 ```
 
-The troubleshooting process included checking:
+A `169.254.x.x` address is therefore an important troubleshooting clue for DHCP problems.
+
+---
+
+# Diagnosing the DHCP Failure
+
+Client configuration can first be checked using:
 
 ```text
 ipconfig /all
 ```
 
-and then checking Router0:
+Router interfaces can then be checked with:
 
 ```text
 show ip interface brief
+```
+
+If both router interfaces remain:
+
+```text
+up/up
+```
+
+the next step is checking the router configuration:
+
+```text
 show running-config
 ```
 
-The router interfaces remained operational, but the `ip helper-address` configuration was missing.
+The missing command would be identified:
 
-The issue was fixed with:
+```text
+ip helper-address 192.168.50.10
+```
+
+---
+
+# Fixing DHCP Relay
+
+The configuration was restored with:
 
 ```text
 configure terminal
@@ -550,7 +669,13 @@ ip helper-address 192.168.50.10
 end
 ```
 
-The client was then able to obtain a valid DHCP lease again.
+The client was then configured for DHCP again and successfully received a valid:
+
+```text
+192.168.10.x
+```
+
+address.
 
 ---
 
@@ -562,7 +687,7 @@ The DNS A record for:
 server.company.local
 ```
 
-was intentionally removed.
+was intentionally removed from Server0.
 
 The server could still be reached using:
 
@@ -570,25 +695,28 @@ The server could still be reached using:
 ping 192.168.50.10
 ```
 
-but name-based communication failed.
+but hostname resolution failed.
 
-This created an important troubleshooting distinction:
+This demonstrated an important troubleshooting method.
 
 ```text
 Ping by IP works
+        |
 Ping by hostname fails
         |
         v
-Likely DNS Problem
+Investigate DNS
 ```
 
-The DNS configuration was checked on Server0 and the A record was restored:
+The DNS record was restored:
 
 ```text
-server.company.local → 192.168.50.10
+server.company.local
+A Record
+192.168.50.10
 ```
 
-After restoring the DNS record:
+After restoring the record:
 
 ```text
 ping server.company.local
@@ -600,22 +728,25 @@ worked successfully again.
 
 # Troubleshooting Scenario 4 — Router Interface Failure
 
-Router0 G0/1 was intentionally disabled:
+Router0 G0/1 was intentionally shut down.
+
+Configuration:
 
 ```text
+enable
 configure terminal
 
 interface GigabitEthernet0/1
 shutdown
 ```
 
-The interface status was checked with:
+The interface status was checked using:
 
 ```text
 show ip interface brief
 ```
 
-The output showed:
+The result showed:
 
 ```text
 GigabitEthernet0/1
@@ -624,7 +755,7 @@ administratively down
 down
 ```
 
-![Router Interface Failure](images/10-router-interface-failure.png)
+![Router Interface Failure](https://raw.githubusercontent.com/gurveer6123-coder/lab3Img/main/10-router-interface-failure.png)
 
 The phrase:
 
@@ -632,9 +763,13 @@ The phrase:
 administratively down
 ```
 
-indicates that the interface was manually disabled through configuration.
+indicates that the interface has been manually disabled using the Cisco `shutdown` command.
 
-The problem was fixed using:
+---
+
+# Fixing the Router Interface
+
+The interface was restored using:
 
 ```text
 configure terminal
@@ -645,13 +780,13 @@ no shutdown
 end
 ```
 
-Afterward:
+Verification:
 
 ```text
 show ip interface brief
 ```
 
-returned:
+The interface returned to:
 
 ```text
 GigabitEthernet0/1   192.168.50.1   up   up
@@ -659,11 +794,52 @@ GigabitEthernet0/1   192.168.50.1   up   up
 
 ---
 
-# Troubleshooting Scenario 5 — Incorrect Client IP Configuration
+# Understanding Router Interface States
 
-A client was intentionally assigned an address from the wrong subnet.
+The `show ip interface brief` command can provide useful troubleshooting information.
 
-Example:
+### up / up
+
+```text
+up   up
+```
+
+Usually indicates a healthy interface.
+
+### administratively down / down
+
+```text
+administratively down   down
+```
+
+Usually indicates the interface has been manually shut down.
+
+Solution:
+
+```text
+no shutdown
+```
+
+### down / down
+
+```text
+down   down
+```
+
+Can indicate:
+
+* Cable problem
+* Remote device powered off
+* Remote interface down
+* Physical connection issue
+
+---
+
+# Troubleshooting Scenario 5 — Incorrect Client IP Address
+
+A client was intentionally configured with an address from the wrong subnet.
+
+Incorrect configuration:
 
 ```text
 IP Address:       192.168.20.50
@@ -671,35 +847,43 @@ Subnet Mask:      255.255.255.0
 Default Gateway:  192.168.10.1
 ```
 
-The problem is that:
+The PC belongs to:
 
 ```text
-PC Network:
 192.168.20.0/24
+```
 
-Gateway Network:
+while the configured gateway belongs to:
+
+```text
 192.168.10.0/24
 ```
 
-The PC and its gateway were not in the same subnet.
+Therefore, they are not in the same subnet.
 
-The issue could be diagnosed using:
+The client configuration was checked using:
 
 ```text
 ipconfig /all
 ```
 
-and comparing the client's IP address, subnet mask, and default gateway.
+The IP address and gateway were compared to identify the problem.
 
-The client was finally returned to DHCP so the correct configuration could be automatically restored.
+The client was eventually returned to:
+
+```text
+DHCP
+```
+
+so Server0 could automatically restore the correct settings.
 
 ---
 
 # Troubleshooting Scenario 6 — Switch Port Failure
 
-The switch port connected to a client was intentionally shut down.
+The switch port connected to PC0 was intentionally disabled.
 
-On Switch0:
+Switch configuration:
 
 ```text
 enable
@@ -711,35 +895,42 @@ shutdown
 end
 ```
 
-The port status was then checked using:
+The switch port status was checked using:
 
 ```text
 show interfaces status
 ```
 
-The output showed:
+The result showed:
 
 ```text
 Fa0/1     disabled
 ```
 
-while other connected interfaces remained operational.
+while the other switch interfaces remained connected.
 
-![Switch Port Failure](images/11-switch-port-failure.png)
+![Switch Port Failure](https://raw.githubusercontent.com/gurveer6123-coder/lab3Img/main/11-switch-port-failure.png)
 
-A more detailed interface check can also be performed with:
+This isolated the problem specifically to the switch port connected to PC0.
+
+---
+
+# Detailed Switch Interface Troubleshooting
+
+A specific switch port can be examined using:
 
 ```text
 show interfaces FastEthernet0/1
 ```
 
-A manually disabled port may display:
+A manually disabled interface may show:
 
 ```text
-FastEthernet0/1 is administratively down, line protocol is down
+FastEthernet0/1 is administratively down,
+line protocol is down
 ```
 
-The switch port was restored using:
+The port was restored using:
 
 ```text
 configure terminal
@@ -750,7 +941,13 @@ no shutdown
 end
 ```
 
-The port then returned to:
+The status was checked again using:
+
+```text
+show interfaces status
+```
+
+The port returned to:
 
 ```text
 connected
@@ -760,95 +957,177 @@ connected
 
 # Final Network Verification
 
-After all troubleshooting exercises, every intentionally created problem was repaired.
+After all troubleshooting exercises were completed, all intentionally created failures were repaired.
 
-The following tests were performed:
+Client configuration was checked using:
 
 ```text
 ipconfig
 ```
 
-to verify valid DHCP configuration.
+The client received:
 
-Then:
+```text
+IPv4 Address:     192.168.10.21
+Subnet Mask:      255.255.255.0
+Default Gateway:  192.168.10.1
+```
+
+The default gateway was tested using:
 
 ```text
 ping 192.168.10.1
 ```
 
-to test the user's default gateway.
-
-Then:
+The server was tested directly using:
 
 ```text
 ping 192.168.50.10
 ```
 
-to test communication between the user and server networks.
-
-Finally:
+DNS and end-to-end connectivity were verified using:
 
 ```text
 ping server.company.local
 ```
 
-was used to verify DNS resolution and complete end-to-end connectivity.
+The DNS server successfully resolved:
 
-The hostname successfully resolved to:
+```text
+server.company.local
+```
+
+to:
 
 ```text
 192.168.50.10
 ```
 
-and all packets were successfully returned with:
+and all packets were returned successfully.
+
+![Final Network Verification](https://raw.githubusercontent.com/gurveer6123-coder/lab3Img/main/12-final-verification.png)
+
+The final test confirmed:
 
 ```text
-0% packet loss
-```
+Packets Sent     = 4
+Packets Received = 4
+Packets Lost     = 0
 
-![Final Verification](images/12-final-verification.png)
+Packet Loss      = 0%
+```
 
 ---
 
-# Troubleshooting Commands Used
+# Important Client Troubleshooting Commands
 
-## Windows / Packet Tracer PC Commands
-
-### View IP Configuration
+## Check Basic IP Configuration
 
 ```text
 ipconfig
 ```
 
-### View Detailed IP Configuration
+Used to check:
+
+* IPv4 address
+* Subnet mask
+* Default gateway
+
+---
+
+## Check Detailed IP Configuration
 
 ```text
 ipconfig /all
 ```
 
-### Test Default Gateway
+Used to check:
+
+* IPv4 address
+* Subnet mask
+* Default gateway
+* DNS server
+* DHCP information
+
+---
+
+# Ping the Default Gateway
 
 ```text
 ping 192.168.10.1
 ```
 
-### Test Server by IP
+This tests:
+
+```text
+PC → SW1 → Router0
+```
+
+If this fails, investigate:
+
+* Client IP address
+* Subnet mask
+* Default gateway
+* Ethernet connection
+* Switch port
+* Router G0/0
+
+---
+
+# Ping Server by IP
 
 ```text
 ping 192.168.50.10
 ```
 
-### Test DNS Resolution
+This tests:
+
+```text
+PC
+ |
+SW1
+ |
+Router0
+ |
+SW2
+ |
+Server0
+```
+
+If the gateway works but this fails, investigate:
+
+* Router server-side interface
+* Server network
+* Server configuration
+* Routing
+
+---
+
+# Test DNS
 
 ```text
 ping server.company.local
 ```
 
+If:
+
+```text
+ping 192.168.50.10
+```
+
+works but:
+
+```text
+ping server.company.local
+```
+
+fails, investigate DNS.
+
 ---
 
-# Router Troubleshooting Commands
+# Important Router Troubleshooting Commands
 
-### Display Interface Status
+## Show IP Interface Status
 
 ```text
 show ip interface brief
@@ -858,11 +1137,15 @@ Useful for identifying:
 
 ```text
 up/up
+
 down/down
+
 administratively down/down
 ```
 
-### Display Router Configuration
+---
+
+# Show Router Configuration
 
 ```text
 show running-config
@@ -871,21 +1154,22 @@ show running-config
 Useful for verifying:
 
 * Interface IP addresses
+* Subnet masks
 * DHCP Relay
-* Interface shutdown state
-* Other configuration
+* Shutdown configuration
+* Other router settings
 
 ---
 
-# Switch Troubleshooting Commands
+# Important Switch Troubleshooting Commands
 
-### Display Switch Port Status
+## Show Switch Port Status
 
 ```text
 show interfaces status
 ```
 
-Useful for identifying whether ports are:
+Useful for identifying:
 
 ```text
 connected
@@ -893,34 +1177,51 @@ notconnect
 disabled
 ```
 
-### Inspect a Specific Interface
+---
+
+## Show Specific Interface Information
 
 ```text
 show interfaces FastEthernet0/1
 ```
 
-### Display VLAN Information
+Useful for checking:
+
+* Interface state
+* Line protocol
+* Physical connectivity
+* Administrative shutdown state
+
+---
+
+## Show VLAN Configuration
 
 ```text
 show vlan brief
 ```
 
+Useful for checking:
+
+* VLAN membership
+* Active VLANs
+* Port assignments
+
 ---
 
-# Troubleshooting Methodology Learned
+# Troubleshooting Methodology
 
-This lab demonstrated that troubleshooting should be performed systematically instead of randomly changing configuration.
+A major goal of this lab was learning to troubleshoot systematically rather than randomly changing network configuration.
 
-A basic troubleshooting process used during the lab was:
+The following process was used:
 
 ```text
 1. Check physical connection
         |
         v
-2. Check switch/interface status
+2. Check switch port
         |
         v
-3. Check client IP configuration
+3. Check client IP address
         |
         v
 4. Check subnet mask
@@ -929,41 +1230,66 @@ A basic troubleshooting process used during the lab was:
 5. Check default gateway
         |
         v
-6. Test local gateway
+6. Ping local gateway
         |
         v
-7. Test remote destination by IP
+7. Ping remote destination by IP
         |
         v
-8. Test DNS/name resolution
+8. Test DNS
         |
         v
-9. Check DHCP/DNS server
+9. Check DHCP/DNS services
         |
         v
-10. Verify router configuration
+10. Check router configuration
 ```
-
-Examples of symptoms and likely causes:
-
-| Symptom                                      | Likely Area to Investigate   |
-| -------------------------------------------- | ---------------------------- |
-| `0.0.0.0` or `169.254.x.x`                   | DHCP                         |
-| Cannot reach default gateway                 | Local LAN / IP / switch      |
-| Local network works but remote network fails | Gateway / Routing            |
-| Ping by IP works but hostname fails          | DNS                          |
-| `administratively down`                      | Interface manually shut down |
-| Switch port shows `disabled`                 | Switch port shutdown         |
-| Wrong subnet/IP combination                  | Client configuration         |
-| DHCP server on another subnet not responding | DHCP Relay                   |
 
 ---
 
-# Key Concepts Learned
+# Common Symptoms and Possible Causes
 
-## DHCP
+| Symptom                                      | Possible Cause                            |
+| -------------------------------------------- | ----------------------------------------- |
+| `0.0.0.0` address                            | DHCP failure                              |
+| `169.254.x.x` address                        | DHCP/APIPA                                |
+| Cannot reach gateway                         | Local LAN, IP, switch, or gateway problem |
+| Local network works but remote network fails | Gateway or routing problem                |
+| Server works by IP but not hostname          | DNS problem                               |
+| `administratively down`                      | Interface manually shut down              |
+| Switch port shows `disabled`                 | Port shutdown                             |
+| Wrong subnet address                         | Client IP configuration                   |
+| Remote DHCP server unreachable               | DHCP Relay problem                        |
+| `ip helper-address` missing                  | DHCP cannot cross router                  |
 
-DHCP automatically provides clients with:
+---
+
+# DHCP vs Router DHCP
+
+A router can act as a DHCP server.
+
+For example:
+
+```text
+ip dhcp pool USERS
+network 192.168.10.0 255.255.255.0
+default-router 192.168.10.1
+```
+
+However, this lab used a dedicated centralized server.
+
+```text
+Server0 = DHCP Server
+Router0 = DHCP Relay
+```
+
+A centralized DHCP server is commonly used in larger environments where administrators want DHCP services centrally managed.
+
+---
+
+# DHCP Information Provided to Clients
+
+DHCP can automatically provide:
 
 ```text
 IP Address
@@ -972,81 +1298,83 @@ Default Gateway
 DNS Server
 ```
 
-This reduces the need for manually configuring every client.
-
----
-
-## DHCP Relay
-
-DHCP broadcasts normally cannot cross routers.
-
-The Cisco command:
+For example:
 
 ```text
-ip helper-address 192.168.50.10
+IP Address:       192.168.10.21
+Subnet Mask:      255.255.255.0
+Default Gateway:  192.168.10.1
+DNS Server:       192.168.50.10
 ```
-
-allows Router0 to forward DHCP requests from the user LAN to the centralized DHCP server.
 
 ---
 
-## DNS
+# DNS Concept
 
-DNS translates human-readable names into IP addresses.
+DNS translates names into IP addresses.
 
 Example:
 
 ```text
 server.company.local
-        ↓
+        |
+        v
 192.168.50.10
 ```
 
-A successful IP ping combined with a failed hostname ping is an important indication of a possible DNS problem.
+Without DNS, users would need to remember the IP address of every server.
 
 ---
 
-## Default Gateway
+# Default Gateway Concept
 
-The default gateway allows a device to communicate with destinations outside its local subnet.
+A default gateway is used when a device needs to communicate with another network.
 
-For the user network:
+For the client network:
 
 ```text
-192.168.10.1
+Default Gateway = 192.168.10.1
 ```
-
-is the gateway.
 
 For the server network:
 
 ```text
-192.168.50.1
+Default Gateway = 192.168.50.1
 ```
 
-is the gateway.
-
----
-
-## Static vs Dynamic IP Addresses
-
-Infrastructure devices such as servers and routers commonly use static addresses.
-
-Example:
+Router0 connects the two networks.
 
 ```text
-Router G0/0 = 192.168.10.1
-Router G0/1 = 192.168.50.1
-Server0     = 192.168.50.10
+192.168.10.0/24
+       |
+192.168.10.1
+   Router0
+192.168.50.1
+       |
+192.168.50.0/24
 ```
-
-End-user devices can receive addresses dynamically through DHCP.
 
 ---
 
-# Final Working Configuration
+# Static vs Dynamic IP Addresses
 
-## Router0
+Infrastructure devices were configured using static addresses.
+
+```text
+Router0 G0/0 = 192.168.10.1
+
+Router0 G0/1 = 192.168.50.1
+
+Server0 = 192.168.50.10
+```
+
+End-user PCs were configured dynamically using DHCP.
+
+This helps keep infrastructure addresses predictable while simplifying client management.
+
+---
+
+# Final Router Configuration
 
 ```text
 interface GigabitEthernet0/0
@@ -1059,7 +1387,9 @@ interface GigabitEthernet0/1
  no shutdown
 ```
 
-## Server0
+---
+
+# Final Server Configuration
 
 ```text
 IP Address:       192.168.50.10
@@ -1068,59 +1398,127 @@ Default Gateway:  192.168.50.1
 DNS Server:       192.168.50.10
 ```
 
-## DHCP Pool
+---
+
+# Final DHCP Pool
 
 ```text
-Pool Name:         Users
-Network:           192.168.10.0/24
-Default Gateway:   192.168.10.1
-DNS Server:        192.168.50.10
-Start IP Address:  192.168.10.20
-Maximum Users:     100
-```
-
-## DNS Record
-
-```text
-server.company.local
-A Record
-192.168.50.10
+Pool Name:          Users
+Network:            192.168.10.0/24
+Default Gateway:    192.168.10.1
+DNS Server:         192.168.50.10
+Start IP Address:   192.168.10.20
+Subnet Mask:        255.255.255.0
+Maximum Users:      100
 ```
 
 ---
 
-# Skills Demonstrated
+# Final DNS Record
 
-This project demonstrates practical experience with:
+```text
+Name:     server.company.local
+Type:     A Record
+Address:  192.168.50.10
+```
 
-* Cisco Packet Tracer
-* Cisco IOS CLI
-* IPv4 network design
-* IP addressing
-* Subnetting
-* Router configuration
-* Switch troubleshooting
-* Centralized DHCP
-* DHCP Relay
-* DNS configuration
-* Static and dynamic addressing
-* Default gateways
-* Inter-subnet communication
-* Client network troubleshooting
-* Router interface troubleshooting
-* Switch port troubleshooting
-* DNS troubleshooting
-* DHCP troubleshooting
-* Network verification
-* Structured troubleshooting methodology
+---
+
+# Final Working Network
+
+```text
+PC0/PC1/PC2
+DHCP Clients
+192.168.10.0/24
+
+       |
+       v
+
+Switch0
+
+       |
+       v
+
+Router0 G0/0
+192.168.10.1
+
+       |
+       | Routing
+       |
+
+Router0 G0/1
+192.168.50.1
+
+       |
+       v
+
+Switch1
+
+       |
+       v
+
+Server0
+192.168.50.10
+DHCP + DNS
+```
+
+---
+
+# Lab Results
+
+The final network successfully demonstrated:
+
+```text
+IPv4 Addressing            ✓
+Subnetting                 ✓
+Static Addressing          ✓
+Dynamic Addressing         ✓
+Centralized DHCP           ✓
+DHCP Relay                 ✓
+DNS                        ✓
+Default Gateways           ✓
+Inter-Subnet Routing       ✓
+Router Configuration       ✓
+Switch Troubleshooting     ✓
+DHCP Troubleshooting       ✓
+DNS Troubleshooting        ✓
+Interface Troubleshooting  ✓
+End-to-End Connectivity    ✓
+```
+
+---
+
+# Troubleshooting Scenarios Completed
+
+The following failures were intentionally introduced, diagnosed, and repaired:
+
+1. Incorrect default gateway
+2. DHCP Relay failure
+3. DHCP client addressing failure
+4. DNS record failure
+5. Router interface shutdown
+6. Incorrect client IP configuration
+7. Switch port shutdown
 
 ---
 
 # Project Outcome
 
-The final network successfully provides centralized DHCP and DNS services to clients located on a different subnet.
+This lab successfully demonstrated how centralized network services can support clients located on different subnets.
 
-Router0 successfully routes traffic between:
+Server0 provided DHCP and DNS services from:
+
+```text
+192.168.50.10
+```
+
+while the client PCs were located on:
+
+```text
+192.168.10.0/24
+```
+
+Router0 provided connectivity between:
 
 ```text
 192.168.10.0/24
@@ -1132,13 +1530,15 @@ and:
 192.168.50.0/24
 ```
 
-DHCP Relay allows client DHCP requests to reach the centralized Server0 at:
+The command:
 
 ```text
-192.168.50.10
+ip helper-address 192.168.50.10
 ```
 
-DNS allows clients to resolve:
+allowed DHCP requests from the user LAN to reach the DHCP server located on another subnet.
+
+DNS successfully resolved:
 
 ```text
 server.company.local
@@ -1150,33 +1550,27 @@ to:
 192.168.50.10
 ```
 
-Multiple failures were intentionally introduced, diagnosed, and corrected, including:
-
-* Incorrect default gateway
-* DHCP Relay failure
-* DHCP client configuration failure
-* DNS record failure
-* Router interface shutdown
-* Incorrect client IP configuration
-* Switch port shutdown
-
-The final connectivity test confirmed successful DHCP addressing, routing, DNS resolution, and communication between the user and server networks.
+The network was tested under multiple failure conditions, and each problem was identified and corrected using Cisco IOS and client troubleshooting commands.
 
 ---
 
-## Final Result
+# Final Verification
+
+The final network successfully achieved:
 
 ```text
-DHCP                    ✓
-DHCP Relay              ✓
-DNS                     ✓
-Inter-Subnet Routing    ✓
-Default Gateway         ✓
-Router Interfaces       ✓
-Switch Connectivity     ✓
-Hostname Resolution     ✓
-End-to-End Connectivity ✓
-Troubleshooting         ✓
+DHCP                     ✓
+DHCP Relay               ✓
+DNS                      ✓
+Inter-Subnet Routing     ✓
+Default Gateway          ✓
+Router Interfaces        ✓
+Switch Connectivity      ✓
+Hostname Resolution      ✓
+Client Connectivity      ✓
+Server Connectivity      ✓
+End-to-End Connectivity  ✓
+Troubleshooting          ✓
 ```
 
-**Lab 3 successfully completed.**
+## Lab 3 Successfully Completed
